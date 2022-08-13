@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/pog.dir/main.cpp.o -o pog  lib/libimgui.a lib/glfw/src/libglfw3.a /usr/lib/librt.a -lm -ldl lib/glad/libglad.a /usr/lib/libGLX.so /usr/lib/libOpenGL.so 

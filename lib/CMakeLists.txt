@@ -40,3 +40,13 @@ target_include_directories(
         imgui
         imgui/backends
 )
+
+################# fts ############################
+
+add_library(fts INTERFACE)
+
+target_include_directories(
+        fts
+        INTERFACE
+        fts
+)

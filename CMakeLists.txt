@@ -9,10 +9,10 @@ add_subdirectory("./lib")
 
 find_package(OpenGL REQUIRED)
 
-add_executable(pog main.cpp)
+add_executable(pog
+			   main.cpp)
 
 target_link_libraries(
 	pog
-	imgui
-	OpenGL::GL
+	PUBLIC imgui OpenGL::GL
 )
