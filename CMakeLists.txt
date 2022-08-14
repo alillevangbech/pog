@@ -10,7 +10,8 @@ add_subdirectory("./lib")
 find_package(OpenGL REQUIRED)
 
 add_executable(pog
-			   main.cpp)
+			   main.cpp
+			   pog.cpp)
 
 target_link_libraries(
 	pog

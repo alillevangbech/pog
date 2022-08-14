@@ -187,7 +187,7 @@ namespace ImGui
         return (b.second < a.second);
     }
 
-    bool ApplyFilter(char* pattern_buffer, const std::vector<std::string>& items)
+    bool ApplyFilter(int* selected_item, const char* pattern_buffer, const std::vector<std::string>& items)
     {
         ImGuiContext& g = *GImGui;
 
@@ -199,8 +199,6 @@ namespace ImGui
         int items_count = items.size();
 
         // Call the getter to obtain the preview string which is a parameter to BeginCombo()
-		int current_item = 0;
-
         bool isNeedFilter = false;
         bool ShowFilter = false;
 
@@ -208,13 +206,7 @@ namespace ImGui
         // FIXME-OPT: Use clipper (but we need to disable it on the appearing frame to make sure our call to SetItemDefaultFocus() is processed)
         bool value_changed = false;
 		{
-            // Filter input
 
-            // Search Icon, you can use it if you load IconsFontAwesome5 https://github.com/juliettef/IconFontCppHeaders
-            //const ImVec2 label_size = CalcTextSize(ICON_FA_SEARCH, NULL, true);
-            //const ImVec2 search_icon_pos(ImGui::GetItemRectMax().x - label_size.x - style.ItemInnerSpacing.x * 2, window->DC.CursorPos.y + style.FramePadding.y + g.FontSize * 0.1f);
-            //RenderText(search_icon_pos, ICON_FA_SEARCH);
-			//
             if (pattern_buffer[0] != '\0')
             {
                 isNeedFilter = true;
@@ -244,15 +236,12 @@ namespace ImGui
 					{
 						int idx = isNeedFilter ? itemScoreVector[i].first : i;
 						PushID((void*)(intptr_t)idx);
-						const bool item_selected = (idx == current_item);
+						const bool item_selected = (idx == *selected_item);
 						const char* item_text = items[idx].c_str();
-						if (Selectable(item_text, item_selected))
-						{
+						if (Selectable(item_text, item_selected)) {
 							value_changed = true;
-							current_item = idx;
+							*selected_item = idx;
 						}
-						if (item_selected)
-							SetItemDefaultFocus();
 						PopID();
 					}
 					ImGui::ListBoxFooter();

@@ -11,9 +11,13 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl2.h>
 #include "boxfilter.h"
+#include "pog.h"
+
 #include "imgui_internal.h"
 #include <stdio.h>
 #include <string>
+#include <iostream>
+#include <filesystem>
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #endif
@@ -35,6 +39,15 @@ static void glfw_error_callback(int error, const char* description)
 
 int main(int, char**)
 {
+	
+	vector<pog_command_error> pog_errors;
+	unordered_map<string, pog_command> pog_map;
+	for (auto const& dir_entry : std::filesystem::directory_iterator(std::filesystem::current_path())) {
+		if (dir_entry.path().extension() == ".pog") {
+			parse_pog_file(dir_entry.path().string(), pog_map, pog_errors);
+		}
+	}
+
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -68,8 +81,13 @@ int main(int, char**)
 	bool search_completed = false;
 	char search_buffer[SEARCH_BUFFER_SIZE];
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-	std::vector<std::string> items = std::vector<std::string>{"AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO", "PPPP", "QQQQQQQQQQ", "RRR", "SSSS" };
+	std::vector<std::string> items;
+	items.reserve(pog_map.size());
+	for (auto kv : pog_map) items.push_back(kv.first + string(";") + kv.second.value);
+
+
     char pattern_buffer[256] = { 0 };
+	int* selected_item = new int(-1);
 
 	
 	ImGuiWindowFlags window_flags = 0;
@@ -101,21 +119,32 @@ int main(int, char**)
 
         {
 			ImGui::Begin("Dbug", NULL, window_flags);
-			//ImGui::SetKeyboardFocusHere();
+
 			if (initial_focus > 0) {
 				ImGui::SetKeyboardFocusHere();
 				initial_focus--;
 			}
-			ImGui::InputTextWithHint(name.c_str(), "I AM HERE", pattern_buffer, 256);
-			ImGui::ApplyFilter(pattern_buffer, items);
+
+			ImGui::InputTextWithHint(name.c_str(), "Search...", pattern_buffer, 256);
+			ImGui::ApplyFilter(selected_item, pattern_buffer, items);
+			ImGui::Text("%s", *selected_item < 0 ? "No item selected" : items[*selected_item].c_str());
 			ImGui::End();
+
+			if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
+				*selected_item = *selected_item > 0 ? *selected_item - 1 : *selected_item; 
+			}
+
+			if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
+				*selected_item = *selected_item < items.size() ? *selected_item + 1 : *selected_item; 
+			}
+
 
 			if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape)) {
 				glfwSetWindowShouldClose(window, 1);
 			}
 			
 			//ImGui::ShowMetricsWindow();
-			//ImGui::ShowDemoWindow();
+			ImGui::ShowDemoWindow();
 
         }
 
@@ -146,6 +175,8 @@ int main(int, char**)
 
     glfwDestroyWindow(window);
     glfwTerminate();
+	
+	delete selected_item;
 
     return 0;
 }

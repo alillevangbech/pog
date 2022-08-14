@@ -5,6 +5,11 @@
   "file": "/home/albec/repos/pog/main.cpp"
 },
 {
+  "directory": "/home/albec/repos/pog/build",
+  "command": "/usr/bin/c++  -I/home/albec/repos/pog/lib/imgui -I/home/albec/repos/pog/lib/imgui/backends -I/home/albec/repos/pog/lib/glfw/include -I/home/albec/repos/pog/build/lib/glad/include -std=gnu++17 -o CMakeFiles/pog.dir/pog.cpp.o -c /home/albec/repos/pog/pog.cpp",
+  "file": "/home/albec/repos/pog/pog.cpp"
+},
+{
   "directory": "/home/albec/repos/pog/build/lib",
   "command": "/usr/bin/c++  -I/home/albec/repos/pog/lib/imgui -I/home/albec/repos/pog/lib/imgui/backends -I/home/albec/repos/pog/lib/glfw/include -I/home/albec/repos/pog/build/lib/glad/include -std=gnu++17 -o CMakeFiles/imgui.dir/imgui/imgui.cpp.o -c /home/albec/repos/pog/lib/imgui/imgui.cpp",
   "file": "/home/albec/repos/pog/lib/imgui/imgui.cpp"
