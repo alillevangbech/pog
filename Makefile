@@ -9,5 +9,12 @@ build:
 	@cmake --build ./build --target=pog
 	@cp ./build/compile_commands.json .
 
+install:
+	@cmake --build ./build --target=install --config=Release
+	@cp ./build/compile_commands.json .
+
 gen:
-	cd ./build && cmake .. -G "Unix Makefiles"
+	mkdir -p ./build && cd ./build && cmake .. -G "Unix Makefiles" -D CMAKE_INSTALL_PREFIX=stage
+
+clean:
+	rm -rf build

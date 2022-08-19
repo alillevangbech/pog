@@ -1,5 +1,6 @@
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <ios>
 #include <stdlib.h>
 #include <ctype.h>
 #include <cstdint>
@@ -187,7 +188,7 @@ namespace ImGui
         return (b.second < a.second);
     }
 
-    bool ApplyFilter(int* selected_item, const char* pattern_buffer, const std::vector<std::string>& items)
+    int ApplyFilter(int* selected_item, const char* pattern_buffer, const std::vector<std::string>& items)
     {
         ImGuiContext& g = *GImGui;
 
@@ -201,51 +202,52 @@ namespace ImGui
         // Call the getter to obtain the preview string which is a parameter to BeginCombo()
         bool isNeedFilter = false;
         bool ShowFilter = false;
-
-        // Display items
-        // FIXME-OPT: Use clipper (but we need to disable it on the appearing frame to make sure our call to SetItemDefaultFocus() is processed)
         bool value_changed = false;
+		int show_count = 0;
 		{
 
             if (pattern_buffer[0] != '\0')
             {
                 isNeedFilter = true;
-				ShowFilter = true;
             }
 
 
-			if (ShowFilter) {
-				std::vector<std::pair<int, int> > itemScoreVector;
-				if (isNeedFilter)
+			std::vector<std::pair<int, int> > itemScoreVector;
+			if (isNeedFilter)
+			{
+				for (int i = 0; i < items_count; i++)
 				{
-					for (int i = 0; i < items_count; i++)
-					{
-						int score = 0;
-						bool matched = fuzzy_match(pattern_buffer, items[i].c_str(), score);
-						if (matched)
-							itemScoreVector.push_back(std::make_pair(i, score));
-					}
-					std::sort(itemScoreVector.begin(), itemScoreVector.end(), sortbysec_desc);
+					int score = 0;
+					bool matched = fuzzy_match(pattern_buffer, items[i].c_str(), score);
+					if (matched)
+						itemScoreVector.push_back(std::make_pair(i, score));
 				}
+				std::sort(itemScoreVector.begin(), itemScoreVector.end(), sortbysec_desc);
+			}
 
-				int show_count = isNeedFilter ? itemScoreVector.size() : items_count;
+			show_count = isNeedFilter ? itemScoreVector.size() : items_count;
+			ShowFilter = show_count > 0 && pattern_buffer[0] != '\0';
 
-				if (ImGui::ListBoxHeader("##ComboWithFilter_itemList", show_count))
+			if (ShowFilter && *selected_item < itemScoreVector.size() -1 && (IsKeyPressed(ImGuiKey_Tab) || IsKeyPressed(ImGuiKey_DownArrow))) {
+				(*selected_item)++;
+			}
+
+			
+			if (ShowFilter && ImGui::ListBoxHeader("##ComboWithFilter_itemList", show_count))
+			{
+				for (int i = 0; i < show_count; i++)
 				{
-					for (int i = 0; i < show_count; i++)
-					{
-						int idx = isNeedFilter ? itemScoreVector[i].first : i;
-						PushID((void*)(intptr_t)idx);
-						const bool item_selected = (idx == *selected_item);
-						const char* item_text = items[idx].c_str();
-						if (Selectable(item_text, item_selected)) {
-							value_changed = true;
-							*selected_item = idx;
-						}
-						PopID();
+					int idx = isNeedFilter ? itemScoreVector[i].first : i;
+					PushID((void*)(intptr_t)idx);
+					const bool item_selected = (idx == *selected_item);
+					const char* item_text = items[idx].c_str();
+					if (Selectable(item_text, item_selected)) {
+						value_changed = true;
+						*selected_item = idx;
 					}
-					ImGui::ListBoxFooter();
+					PopID();
 				}
+				ImGui::ListBoxFooter();
 			}
         }
 
@@ -253,6 +255,6 @@ namespace ImGui
         if (value_changed)
             MarkItemEdited(g.LastItemData.ID);
 
-        return value_changed;
+        return pattern_buffer[0] == '\0' ? 0 : show_count;
     }
 }

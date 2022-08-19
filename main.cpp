@@ -1,5 +1,5 @@
 // Dear ImGui: standalone example application for GLFW + OpenGL2, using legacy fixed pipeline
-// (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
+
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
@@ -7,6 +7,7 @@
 // **Prefer using the code in the example_glfw_opengl2/ folder**
 // See imgui_impl_glfw.cpp for details.
 
+#include <cfloat>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl2.h>
@@ -55,7 +56,7 @@ int main(int, char**)
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL2 example", NULL, NULL);
     if (window == NULL)
         return 1;
-    glfwMakeContextCurrent(window);
+
     glfwSwapInterval(1); // Enable vsync
 
     // Setup Dear ImGui context
@@ -77,6 +78,7 @@ int main(int, char**)
 
     // Our state
     int initial_focus = 1;
+	bool is_filter_showing = false;
 	std::string name = "##Search";
 	bool search_completed = false;
 	char search_buffer[SEARCH_BUFFER_SIZE];
@@ -86,22 +88,23 @@ int main(int, char**)
 	for (auto kv : pog_map) items.push_back(kv.first + string(";") + kv.second.value);
 
 
-    char pattern_buffer[256] = { 0 };
+    char pattern_buffer[256] = { '\0' };
 	int* selected_item = new int(-1);
+	int count = 0;
 
 	
 	ImGuiWindowFlags window_flags = 0;
-	window_flags |= ImGuiWindowFlags_NoTitleBar;
-	window_flags |= ImGuiWindowFlags_NoScrollbar;
+	//window_flags |= ImGuiWindowFlags_NoTitleBar;
+	//window_flags |= ImGuiWindowFlags_NoScrollbar;
 	//window_flags |= ImGuiWindowFlags_MenuBar;
 	window_flags |= ImGuiWindowFlags_NoMove;
 	window_flags |= ImGuiWindowFlags_NoResize;
-	//window_flags |= ImGuiWindowFlags_NoCollapse;
+	window_flags |= ImGuiWindowFlags_NoCollapse;
 	//window_flags |= ImGuiWindowFlags_NoNav;
-	window_flags |= ImGuiWindowFlags_NoBackground;
+	//window_flags |= ImGuiWindowFlags_NoBackground;
 	//window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-	//window_flags |= ImGuiWindowFlags_UnsavedDocument;
-
+	window_flags |= ImGuiWindowFlags_UnsavedDocument;
+	
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
@@ -116,35 +119,45 @@ int main(int, char**)
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
+		//ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
+		ImGui::SetNextWindowSize(ImVec2(512, 75 + 17 * count), ImGuiCond_Always);
         {
-			ImGui::Begin("Dbug", NULL, window_flags);
-
+			ImGui::Begin("pog", NULL, window_flags);
 			if (initial_focus > 0) {
 				ImGui::SetKeyboardFocusHere();
 				initial_focus--;
 			}
-
-			ImGui::InputTextWithHint(name.c_str(), "Search...", pattern_buffer, 256);
-			ImGui::ApplyFilter(selected_item, pattern_buffer, items);
-			ImGui::Text("%s", *selected_item < 0 ? "No item selected" : items[*selected_item].c_str());
-			ImGui::End();
-
-			if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
-				*selected_item = *selected_item > 0 ? *selected_item - 1 : *selected_item; 
-			}
-
-			if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
-				*selected_item = *selected_item < items.size() ? *selected_item + 1 : *selected_item; 
-			}
-
-
-			if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-				glfwSetWindowShouldClose(window, 1);
-			}
 			
+			//ImGui::PushItemWidth(ImGui::GetWindowWidth()*0.95);
+			ImGui::PushItemWidth(-FLT_MIN);
+			ImGui::InputTextWithHint(name.c_str(), "Search...", pattern_buffer, 256);
+			count = ImGui::ApplyFilter(selected_item, pattern_buffer, items);
+			ImGui::PopItemWidth();
+				
+//       	ImGuiContext& g = *GImGui;
+//       	ImRect r = g.LastItemData.Rect;
+//			ImGui::Text("%s\n selected_item: %d\n shift key %d\n count: %d\n listbox size: min=(%0.1f, %0.1f), max=(%0.1f, %0.1f)",
+//						*selected_item < 0 ? "No item selected" : items[*selected_item].c_str(),
+//						*selected_item,
+//						io.KeyShift,
+//						count,
+//						r.Min.x, r.Min.y, r.Max.x, r.Max.y);
+
+			if (count == 0) {
+				ImGui::Text("");
+				ImGui::SameLine(ImGui::GetWindowWidth() - 168);
+				ImGui::Text("MADE BY ALEXANDER BECH");
+			}
+			ImGui::End();
+			
+			if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape))
+				glfwSetWindowShouldClose(window, 1);
+
+				glfwSetWindowShouldClose(window, 1);
+
 			//ImGui::ShowMetricsWindow();
-			ImGui::ShowDemoWindow();
+	////		ImGui::ShowDemoWindow();
+			//ImGui::ShowStyleEditor();
 
         }
 

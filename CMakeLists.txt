@@ -17,3 +17,6 @@ target_link_libraries(
 	pog
 	PUBLIC imgui OpenGL::GL
 )
+
+install(TARGETS pog DESTINATION bin)
+install(FILES ./shortcut.pog DESTINATION bin)
