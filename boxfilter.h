@@ -188,6 +188,16 @@ namespace ImGui
         return (b.second < a.second);
     }
 
+	static void go_up(int* selecter) 
+	{
+		*selecter = *selecter > 0 ? *selecter - 1 : *selecter;
+	}
+
+	static void go_down(int* selecter, int limit) 
+	{
+		*selecter = *selecter < limit ? *selecter + 1 : *selecter;
+	}
+
     int ApplyFilter(int* selected_item, const char* pattern_buffer, const std::vector<std::string>& items)
     {
         ImGuiContext& g = *GImGui;
@@ -206,12 +216,11 @@ namespace ImGui
 		int show_count = 0;
 		{
 
-            if (pattern_buffer[0] != '\0')
-            {
+            if (pattern_buffer[0] != '\0') {
                 isNeedFilter = true;
             }
 
-
+			
 			std::vector<std::pair<int, int> > itemScoreVector;
 			if (isNeedFilter)
 			{
@@ -227,12 +236,24 @@ namespace ImGui
 
 			show_count = isNeedFilter ? itemScoreVector.size() : items_count;
 			ShowFilter = show_count > 0 && pattern_buffer[0] != '\0';
+			
+			// hotkeys
+			if (ShowFilter) {
 
-			if (ShowFilter && *selected_item < itemScoreVector.size() -1 && (IsKeyPressed(ImGuiKey_Tab) || IsKeyPressed(ImGuiKey_DownArrow))) {
-				(*selected_item)++;
+				if (IsKeyPressed(ImGuiKey_Tab)) {
+					if (g.IO.KeyShift)
+						go_up(selected_item);
+					else
+						go_down(selected_item, show_count - 1);
+				}
+
+				if (IsKeyPressed(ImGuiKey_UpArrow))
+					go_up(selected_item);
+
+				if (IsKeyPressed(ImGuiKey_DownArrow))
+					go_down(selected_item, show_count - 1);
 			}
 
-			
 			if (ShowFilter && ImGui::ListBoxHeader("##ComboWithFilter_itemList", show_count))
 			{
 				for (int i = 0; i < show_count; i++)
@@ -248,7 +269,7 @@ namespace ImGui
 					PopID();
 				}
 				ImGui::ListBoxFooter();
-			}
+			}			
         }
 
 

@@ -6,6 +6,9 @@
 // **DO NOT USE THIS CODE IF YOUR CODE/ENGINE IS USING MODERN OPENGL (SHADERS, VBO, VAO, etc.)**
 // **Prefer using the code in the example_glfw_opengl2/ folder**
 // See imgui_impl_glfw.cpp for details.
+//
+
+// #define DDEBUG
 
 #include <cfloat>
 #include <imgui.h>
@@ -78,15 +81,11 @@ int main(int, char**)
 
     // Our state
     int initial_focus = 1;
-	bool is_filter_showing = false;
 	std::string name = "##Search";
-	bool search_completed = false;
-	char search_buffer[SEARCH_BUFFER_SIZE];
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	std::vector<std::string> items;
 	items.reserve(pog_map.size());
 	for (auto kv : pog_map) items.push_back(kv.first + string(";") + kv.second.value);
-
 
     char pattern_buffer[256] = { '\0' };
 	int* selected_item = new int(-1);
@@ -120,7 +119,12 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 		//ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
-		ImGui::SetNextWindowSize(ImVec2(512, 75 + 17 * count), ImGuiCond_Always);
+#ifdef DDEBUG
+		ImGui::SetNextWindowSize(ImVec2(512,1000 + 75 + 17 * count), ImGuiCond_Always);
+#else 
+		ImGui::SetNextWindowSize(ImVec2(512,75 + 17 * count), ImGuiCond_Always);
+#endif
+
         {
 			ImGui::Begin("pog", NULL, window_flags);
 			if (initial_focus > 0) {
@@ -130,29 +134,37 @@ int main(int, char**)
 			
 			//ImGui::PushItemWidth(ImGui::GetWindowWidth()*0.95);
 			ImGui::PushItemWidth(-FLT_MIN);
-			ImGui::InputTextWithHint(name.c_str(), "Search...", pattern_buffer, 256);
+			if (ImGui::InputTextWithHint(name.c_str(), "Search...", pattern_buffer, 256))
+				*selected_item = -1;
 			count = ImGui::ApplyFilter(selected_item, pattern_buffer, items);
 			ImGui::PopItemWidth();
-				
-//       	ImGuiContext& g = *GImGui;
-//       	ImRect r = g.LastItemData.Rect;
-//			ImGui::Text("%s\n selected_item: %d\n shift key %d\n count: %d\n listbox size: min=(%0.1f, %0.1f), max=(%0.1f, %0.1f)",
-//						*selected_item < 0 ? "No item selected" : items[*selected_item].c_str(),
-//						*selected_item,
-//						io.KeyShift,
-//						count,
-//						r.Min.x, r.Min.y, r.Max.x, r.Max.y);
-
+	
+#ifdef DDEBUG
+			ImGuiContext& g = *GImGui;
+			ImRect r = g.LastItemData.Rect;
+			ImGui::Text("%s\n selected_item: %d\n shift key %d\n count: %d\n listbox size: min=(%0.1f, %0.1f), max=(%0.1f, %0.1f).\n changed %d",
+						*selected_item < 0 ? "No item selected" : items[*selected_item].c_str(),
+						*selected_item,
+						io.KeyShift,
+						count,
+						r.Min.x, r.Min.y, r.Max.x, r.Max.y, text_changed);
+#endif
 			if (count == 0) {
 				ImGui::Text("");
 				ImGui::SameLine(ImGui::GetWindowWidth() - 168);
 				ImGui::Text("MADE BY ALEXANDER BECH");
 			}
-			ImGui::End();
-			
-			if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape))
-				glfwSetWindowShouldClose(window, 1);
 
+			if (*selected_item != -1 && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+				size_t idx = items[*selected_item].find_first_of(";");
+				ImGui::Text("Execute this file or url with a default program!\n %s", pog_map[items[*selected_item].substr(0, idx)].value.c_str());
+				// launch
+			}
+
+			ImGui::End();
+
+
+			if (!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_Escape))
 				glfwSetWindowShouldClose(window, 1);
 
 			//ImGui::ShowMetricsWindow();
