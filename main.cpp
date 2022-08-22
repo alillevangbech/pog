@@ -11,11 +11,13 @@
 // #define DDEBUG
 
 #include <cfloat>
+#include <cstring>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl2.h>
 #include "boxfilter.h"
 #include "pog.h"
+#include "launch.h"
 
 #include "imgui_internal.h"
 #include <stdio.h>
@@ -35,6 +37,9 @@
 #endif
 
 #define SEARCH_BUFFER_SIZE 1024
+
+#define WINDOW_SIZE_X 512
+#define WINDOW_SIZE_Y 
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -56,10 +61,16 @@ int main(int, char**)
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL2 example", NULL, NULL);
+
+	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+	glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
+	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
+
+    GLFWwindow* window = glfwCreateWindow(1200, 700, "Dear Emilie <3", NULL, NULL);
     if (window == NULL)
         return 1;
-
+	
+	glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
     // Setup Dear ImGui context
@@ -93,15 +104,11 @@ int main(int, char**)
 
 	
 	ImGuiWindowFlags window_flags = 0;
-	//window_flags |= ImGuiWindowFlags_NoTitleBar;
-	//window_flags |= ImGuiWindowFlags_NoScrollbar;
-	//window_flags |= ImGuiWindowFlags_MenuBar;
 	window_flags |= ImGuiWindowFlags_NoMove;
-	window_flags |= ImGuiWindowFlags_NoResize;
 	window_flags |= ImGuiWindowFlags_NoCollapse;
-	//window_flags |= ImGuiWindowFlags_NoNav;
+	window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+	//window_flags |= ImGuiWindowFlags_NoDecoration;
 	//window_flags |= ImGuiWindowFlags_NoBackground;
-	//window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
 	window_flags |= ImGuiWindowFlags_UnsavedDocument;
 	
     // Main loop
@@ -118,11 +125,11 @@ int main(int, char**)
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-		//ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
+		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
 #ifdef DDEBUG
-		ImGui::SetNextWindowSize(ImVec2(512,1000 + 75 + 17 * count), ImGuiCond_Always);
+	//	ImGui::SetNextWindowSize(ImVec2(512,1000 + 75 + 17 * count), ImGuiCond_Always);
 #else 
-		ImGui::SetNextWindowSize(ImVec2(512,75 + 17 * count), ImGuiCond_Always);
+		//ImGui::SetNextWindowSize(ImVec2(512,75 + 17 * count), ImGuiCond_Always);
 #endif
 
         {
@@ -133,7 +140,7 @@ int main(int, char**)
 			}
 			
 			//ImGui::PushItemWidth(ImGui::GetWindowWidth()*0.95);
-			ImGui::PushItemWidth(-FLT_MIN);
+			ImGui::PushItemWidth(420);
 			if (ImGui::InputTextWithHint(name.c_str(), "Search...", pattern_buffer, 256))
 				*selected_item = -1;
 			count = ImGui::ApplyFilter(selected_item, pattern_buffer, items);
@@ -147,7 +154,7 @@ int main(int, char**)
 						*selected_item,
 						io.KeyShift,
 						count,
-						r.Min.x, r.Min.y, r.Max.x, r.Max.y, text_changed);
+						r.Min.x, r.Min.y, r.Max.x, r.Max.y, 1);
 #endif
 			if (count == 0) {
 				ImGui::Text("");
@@ -157,8 +164,13 @@ int main(int, char**)
 
 			if (*selected_item != -1 && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
 				size_t idx = items[*selected_item].find_first_of(";");
-				ImGui::Text("Execute this file or url with a default program!\n %s", pog_map[items[*selected_item].substr(0, idx)].value.c_str());
+				const char* s_const = pog_map[items[*selected_item].substr(0, idx)].value.c_str();
+				char* s = strdup(s_const);
+
+				ImGui::Text("Execute this file or url with a default program!\n %s", s);
+				openFile(s);
 				// launch
+				free(s);
 			}
 
 			ImGui::End();
