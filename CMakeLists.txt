@@ -13,10 +13,11 @@ add_executable(pog
 			   main.cpp
 			   pog.cpp)
 
+
 target_link_libraries(
 	pog
 	PUBLIC imgui OpenGL::GL
 )
 
-install(TARGETS pog DESTINATION bin)
-install(FILES ./shortcut.pog DESTINATION bin)
+install(TARGETS pog DESTINATION .)
+install(FILES ./shortcut.pog DESTINATION .)

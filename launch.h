@@ -1,3 +1,12 @@
+#ifdef _WIN32
+
+int openFile(char* path)
+{
+    return 0;
+}
+
+#else
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
@@ -116,3 +125,5 @@ int openFile(char* path)
     }
     return 0;
 }
+
+#endif

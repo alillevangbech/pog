@@ -10,6 +10,11 @@
 
 // #define DDEBUG
 
+#ifdef _WIN32
+#include <windows.h>
+auto handle = ShowWindow(GetConsoleWindow(), SW_HIDE); //SW_RESTORE to bring back
+#endif
+
 #include <cfloat>
 #include <cstring>
 #include <imgui.h>
@@ -46,6 +51,8 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+void glfwSetWindowCenter(GLFWwindow* window);
+
 int main(int, char**)
 {
 	
@@ -62,14 +69,14 @@ int main(int, char**)
     if (!glfwInit())
         return 1;
 
-	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-	glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-	glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(1200, 700, "Dear Emilie <3", NULL, NULL);
+	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
+    GLFWwindow* window = glfwCreateWindow(520, 300, "Dear Emilie <3", NULL, NULL);
     if (window == NULL)
         return 1;
-	
+
+	glfwSetWindowCenter(window);
 	glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
@@ -109,7 +116,9 @@ int main(int, char**)
 	window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
 	//window_flags |= ImGuiWindowFlags_NoDecoration;
 	//window_flags |= ImGuiWindowFlags_NoBackground;
-	window_flags |= ImGuiWindowFlags_UnsavedDocument;
+
+	bool use_work_area = false;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
 	
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -125,12 +134,16 @@ int main(int, char**)
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
+		//ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
 #ifdef DDEBUG
 	//	ImGui::SetNextWindowSize(ImVec2(512,1000 + 75 + 17 * count), ImGuiCond_Always);
 #else 
 		//ImGui::SetNextWindowSize(ImVec2(512,75 + 17 * count), ImGuiCond_Always);
 #endif
+
+	glfwSetWindowSize(window, 512, 75 + 17 * count);
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, 75 + 17 * count));
 
         {
 			ImGui::Begin("pog", NULL, window_flags);
@@ -140,7 +153,7 @@ int main(int, char**)
 			}
 			
 			//ImGui::PushItemWidth(ImGui::GetWindowWidth()*0.95);
-			ImGui::PushItemWidth(420);
+			ImGui::PushItemWidth(-FLT_MIN);
 			if (ImGui::InputTextWithHint(name.c_str(), "Search...", pattern_buffer, 256))
 				*selected_item = -1;
 			count = ImGui::ApplyFilter(selected_item, pattern_buffer, items);
@@ -180,7 +193,7 @@ int main(int, char**)
 				glfwSetWindowShouldClose(window, 1);
 
 			//ImGui::ShowMetricsWindow();
-	////		ImGui::ShowDemoWindow();
+			//ImGui::ShowDemoWindow();
 			//ImGui::ShowStyleEditor();
 
         }
@@ -216,4 +229,69 @@ int main(int, char**)
 	delete selected_item;
 
     return 0;
+}
+
+
+void glfwSetWindowCenter(GLFWwindow* window) {
+    // Get window position and size
+    int window_x, window_y;
+    glfwGetWindowPos(window, &window_x, &window_y);
+
+    int window_width, window_height;
+    glfwGetWindowSize(window, &window_width, &window_height);
+
+    // Halve the window size and use it to adjust the window position to the center of the window
+    window_width *= 0.5;
+    window_height *= 0.5;
+
+    window_x += window_width;
+    window_y += window_height;
+
+    // Get the list of monitors
+    int monitors_length;
+    GLFWmonitor **monitors = glfwGetMonitors(&monitors_length);
+
+    if(monitors == NULL) {
+        // Got no monitors back
+        return;
+    }
+
+    // Figure out which monitor the window is in
+    GLFWmonitor *owner = NULL;
+    int owner_x, owner_y, owner_width, owner_height;
+
+    for(int i = 0; i < monitors_length; i++) {
+        // Get the monitor position
+        int monitor_x, monitor_y;
+        glfwGetMonitorPos(monitors[i], &monitor_x, &monitor_y);
+
+        // Get the monitor size from its video mode
+        int monitor_width, monitor_height;
+        GLFWvidmode *monitor_vidmode = (GLFWvidmode*) glfwGetVideoMode(monitors[i]);
+
+        if(monitor_vidmode == NULL) {
+            // Video mode is required for width and height, so skip this monitor
+            continue;
+
+        } else {
+            monitor_width = monitor_vidmode->width;
+            monitor_height = monitor_vidmode->height;
+        }
+
+        // Set the owner to this monitor if the center of the window is within its bounding box
+        if((window_x > monitor_x && window_x < (monitor_x + monitor_width)) && (window_y > monitor_y && window_y < (monitor_y + monitor_height))) {
+            owner = monitors[i];
+
+            owner_x = monitor_x;
+            owner_y = monitor_y;
+
+            owner_width = monitor_width;
+            owner_height = monitor_height;
+        }
+    }
+
+    if(owner != NULL) {
+        // Set the window position to the center of the owner monitor
+        glfwSetWindowPos(window, owner_x + (owner_width * 0.5) - window_width, owner_y + (owner_height * 0.5) - window_height);
+    }
 }
