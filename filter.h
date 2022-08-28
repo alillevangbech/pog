@@ -188,19 +188,26 @@ namespace ImGui
         return (b.second < a.second);
     }
 
-	static void go_up(int* selecter) 
+	static void go_up(int* selecter, int* idx, std::vector<std::pair<int,int>>& items_inview) 
 	{
-		*selecter = *selecter > 0 ? *selecter - 1 : *selecter;
+        if (*idx > 0) {
+            (*idx)--;
+            *selecter = items_inview[*idx].first; 
+        }
 	}
 
-	static void go_down(int* selecter, int limit) 
+	static void go_down(int* selecter, int* idx, std::vector<std::pair<int,int>>& items_inview) 
 	{
-		*selecter = *selecter < limit ? *selecter + 1 : *selecter;
+        if (*idx < (int)items_inview.size() - 1) {
+            *idx += 1;
+            *selecter = items_inview[*idx].first; 
+        }
 	}
 
-    int ApplyFilter(int* selected_item, const char* pattern_buffer, const std::vector<std::string>& items)
+    int ApplyFilter(int* selected_item, int* selected_item_inview, const char* pattern_buffer, const std::vector<std::string>& items, std::vector<std::pair<int,int>>& items_inview, bool update_view)
     {
         ImGuiContext& g = *GImGui;
+        ImGuiIO& io = g.IO;
 
         ImGuiWindow* window = GetCurrentWindow();
         if (window->SkipItems)
@@ -220,45 +227,44 @@ namespace ImGui
                 isNeedFilter = true;
             }
 
-			
-			std::vector<std::pair<int, int> > itemScoreVector;
-			if (isNeedFilter)
+			if (isNeedFilter && update_view)
 			{
+                items_inview.clear();
 				for (int i = 0; i < items_count; i++)
 				{
 					int score = 0;
 					bool matched = fuzzy_match(pattern_buffer, items[i].c_str(), score);
 					if (matched)
-						itemScoreVector.push_back(std::make_pair(i, score));
+						items_inview.push_back(std::make_pair(i, score));
 				}
-				std::sort(itemScoreVector.begin(), itemScoreVector.end(), sortbysec_desc);
+				std::sort(items_inview.begin(), items_inview.end(), sortbysec_desc);
 			}
 
-			show_count = isNeedFilter ? itemScoreVector.size() : items_count;
+			show_count = isNeedFilter ? items_inview.size() : items_count;
 			ShowFilter = show_count > 0 && pattern_buffer[0] != '\0';
 			
 			// hotkeys
-			if (ShowFilter) {
+			if (ShowFilter && io.WantTextInput) {
 
 				if (IsKeyPressed(ImGuiKey_Tab)) {
 					if (g.IO.KeyShift)
-						go_up(selected_item);
+						go_up(selected_item, selected_item_inview, items_inview);
 					else
-						go_down(selected_item, show_count - 1);
+						go_down(selected_item, selected_item_inview, items_inview);
 				}
 
 				if (IsKeyPressed(ImGuiKey_UpArrow))
-					go_up(selected_item);
+                    go_up(selected_item, selected_item_inview, items_inview);
 
-				if (IsKeyPressed(ImGuiKey_DownArrow))
-					go_down(selected_item, show_count - 1);
+                if (IsKeyPressed(ImGuiKey_DownArrow))
+                    go_down(selected_item, selected_item_inview, items_inview);
 			}
 
 			if (ShowFilter && ImGui::ListBoxHeader("##ComboWithFilter_itemList", show_count))
 			{
 				for (int i = 0; i < show_count; i++)
 				{
-					int idx = isNeedFilter ? itemScoreVector[i].first : i;
+					int idx = isNeedFilter ? items_inview[i].first : i;
 					PushID((void*)(intptr_t)idx);
 					const bool item_selected = (idx == *selected_item);
 					const char* item_text = items[idx].c_str();

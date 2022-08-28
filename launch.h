@@ -1,12 +1,50 @@
-#ifdef _WIN32
-
-int openFile(char* path)
+struct openfile_error_info
 {
-    return 0;
+    char* info;
+    int error_code;
+};
+
+#ifdef _WIN32
+#include <windows.h>
+#include <string>
+std::string GetLastErrorAsString();
+openfile_error_info openFile(char* path)
+{
+    openfile_error_info info;
+    wchar_t wtext[256];
+    std::mbstowcs(wtext, path, strlen(path)+1);
+    LPCWSTR pathv2 = wtext;
+    info.error_code = (int)ShellExecuteW(NULL, L"open", pathv2, NULL, NULL, 0);
+    std::string error = GetLastErrorAsString();
+    info.info = (char*)malloc(sizeof(char) * (error.length() + 1));
+    strcpy(info.info, error.c_str());
+    return info;
 }
+//Returns the last Win32 error, in string format. Returns an empty string if there is no error.
+std::string GetLastErrorAsString()
+{
+    //Get the error message ID, if any.
+    DWORD errorMessageID = ::GetLastError();
+    if(errorMessageID == 0) {
+        return std::string(); //No error message has been recorded
+    }
+    
+    LPSTR messageBuffer = nullptr;
 
+    //Ask Win32 to give us the string version of that message ID.
+    //The parameters we pass in, tell Win32 to create the buffer that holds the message for us (because we don't yet know how long the message string will be).
+    size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                 NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+    
+    //Copy the error message into a std::string.
+    std::string message(messageBuffer, size);
+    
+    //Free the Win32's string's buffer.
+    LocalFree(messageBuffer);
+            
+    return message;
+}
 #else
-
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
@@ -95,7 +133,7 @@ void execProcess(const char* executable, char* const args[])
     _exit(1);
 }
 
-int openFile(char* path)
+openfile_error_info openFile(char* path)
 {
     char xdgOpen[256];
     if (findExecutable("xdg-open", xdgOpen, sizeof(xdgOpen))) {
